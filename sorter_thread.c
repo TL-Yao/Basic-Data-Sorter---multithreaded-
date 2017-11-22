@@ -1,6 +1,10 @@
 #include "sorter_thread.h"
 
 int count_pc = 1;
+pthread_t tid[255];
+int tid_index = -1;
+pthread_mutex_t lock1;
+pthread_mutex_t lock2;
 
 char* path_contact(const char* str1,const char* str2){ 
     char* result;  
@@ -175,4 +179,115 @@ int checkcsv(char* path, char* colname){
 	}
 	return 1; 
 	
+}
+void directory(char* path, char* colname){
+
+    DIR *dir_p;
+    struct dirent *dir_ptr;
+    dir_p = opendir(path);
+    FILE *result;
+    int err = 0;
+
+    if(dir_p == NULL){
+		printf("Wrong Path\n");
+		fflush(stdout); 
+        exit(1);
+    }
+    
+    
+    // loop each file and folder in current directory
+    while(dir_ptr = readdir(dir_p)){
+        char* temppath;
+        temppath = path_contact(path, dir_ptr->d_name);
+        struct stat st;
+        stat(temppath, &st);
+        
+        /*skip forward and back folder*/
+        if(!strcmp(dir_ptr->d_name, ".")  ||
+		   !strcmp(dir_ptr->d_name, "..") ||
+			dir_ptr->d_name[0] == '.'){//change
+	            continue;
+        }
+        
+        if(isDirectory(temppath)){
+            pthread_mutex_lock(&lock1);
+            tid_index++;
+            err = pthread_create(&tid[tid_index], NULL, &directory, NULL);
+            if(err != 0){
+                printf("Failed to create new thread.\n");
+            }
+            pthread_mutex_lock(&lock1);
+        }
+        else{ // file
+            char *name = dir_ptr->d_name;
+            int length = strlen(name);
+            
+            /* .csv file*/
+            if(name[length - 3] == 'c' &&
+               name[length - 2] == 's' &&
+               name[length - 1] == 'v'){
+
+                if(checkcsv(temppath, colname)){
+                    pthread_mutex_lock(&lock2);
+					tid_index++;
+                    err = pthread_create(&tid[tid_index], NULL, &sort, NULL);
+                    if(err != 0){
+                        printf("Failed to create new thread.\n");
+                    }
+                    pthread_mutex_lock(&lock2);
+				}   	
+            }
+        }
+        
+    }
+
+}
+int main (int argc, char* argv[]){
+
+	//declare variables;
+    char* colname = (char*)malloc(100);
+	char* dirname = (char*)malloc(100);
+	char* odirname = (char*)malloc(100);
+    char currDir[MAX_DIR];
+    getcwd(currDir, MAX_DIR);
+    
+	if(argc < 2){
+		printf("Too few input.\n");
+		exit(0);
+	}
+	int i = 1;
+	while(argv[i]){
+		if(i > 6){
+			printf("Too many input.\n");
+			exit(0);
+		}
+		if(!strcmp(argv[i], "-c")){
+			colname = strcpy(colname, argv[i+1]);
+		}
+		if(!strcmp(argv[i], "-d")){
+			dirname = strcpy(dirname, argv[i+1]);
+		}
+		if(!strcmp(argv[i], "-o")){
+			odirname = strcpy(odirname, argv[i+1]);
+		}
+		i += 2;
+	}
+	if(!colname){
+		printf("Wrong input, column name missed.\n");
+	}
+    if(pthread_mutex_init(&lock1, NULL) != 0){
+        printf("Error on lock1.\n");
+    }
+     if(pthread_mutex_init(&lock2, NULL) != 0){
+        printf("Error on lock2.\n");
+    }
+    
+    i = 0;
+    while(tid[i]){
+        pthread_join(tid[i], NULL);
+        i++;
+    }
+    pthread_mutex_destroy(&lock1);
+    pthread_mutex_destroy(&lock2);
+	return 0;
 }

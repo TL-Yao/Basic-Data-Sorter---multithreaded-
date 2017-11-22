@@ -16,6 +16,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <string.h>
+#include<pthread.h>
 
 typedef struct{
     char** row_token;
