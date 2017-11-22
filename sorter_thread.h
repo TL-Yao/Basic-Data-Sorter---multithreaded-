@@ -17,6 +17,11 @@
 #include <errno.h>
 #include <string.h>
 
+struct sort_para{
+    char* colname;
+    char* tmppath;
+};
+
 typedef struct{
     char** row_token;
     char * row_text;

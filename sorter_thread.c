@@ -125,6 +125,138 @@ int tok_file(FILE *fp, row* data, int num_col){
 	return curr_row;
 }
 
+void sort(void * arg){
+	/*open the parameter package*/
+		struct sort_para* para;
+		para = (struct sort_para*) arg;
+		char* colname = arg -> colname;
+		char* tmppath = arg -> tmppath;
+
+		/*declare variable*/
+		FILE *fp;
+		fp = fopen(tmppath,"r");
+		
+		//first row:
+		row first_row;
+		row *data;
+		char *token;
+		char* target;
+		size_t num_col = 1;
+		int length;
+		int i;	
+		int j;
+		int k;
+		int num_row; 
+		int target_col;
+	
+		/*split the 1st token by ','*/
+		first_row.row_text = (char*) malloc (sizeof(char) * BUF_SIZE);		
+		fgets(first_row.row_text, BUF_SIZE-1, fp);
+		first_row.row_len = strlen(first_row.row_text);
+		first_row.row_token = (char**) malloc(sizeof(char *) * first_row.row_len);
+		token = strtok(first_row.row_text, ",");
+		first_row.row_token[0] = token;
+	
+		//split the rest of token in the first row
+		while(token = strtok(NULL, ",")){
+			first_row.row_token[num_col++] = token;	
+		}
+		first_row.num_col = num_col;
+		
+		//delete the '\n' in the last word;
+		
+		length = strlen(first_row.row_token[num_col - 1]);
+		i = 1;
+		while(first_row.row_token[num_col - 1][length - i] <= 13 && first_row.row_token[num_col - 1][length - i] >= 7){
+			first_row.row_token[num_col - 1][length - i] = '\0';
+			i++;
+		}
+        
+		//trim blank space;
+		i = 0;
+		while(i < num_col){
+			first_row.row_token[i] = trim(first_row.row_token[i], strlen(first_row.row_token[i]) - 1);
+			i++;
+		}
+		
+		//deal with rest rows;
+		data = (row*) malloc (sizeof(row) * MAX_LINE);
+		num_row = tok_file(fp, data, num_col);
+
+		
+		//find the target column number;
+			target = colname;
+			target_col = 0;
+			
+			while(target_col < first_row.num_col){
+				if(strcmp(first_row.row_token[target_col], target) == 0){
+					break;
+				}
+				target_col++;
+			}
+			
+			//no such title in the first row
+			if(target_col == (first_row.num_col)){
+				printf("Wrong input, no such title.\n");
+				fflush(stdout); 
+				exit(1);
+			}
+			mergeSort(data, target_col, num_row);
+
+}
+
+int isDirectory(char *path) {
+    struct stat statbuf;
+    if (stat(path, &statbuf) != 0)
+        return 0;
+    return S_ISDIR(statbuf.st_mode);
+ }
+
+int checkcsv(char* path, char* colname){
+	FILE *fptr;
+	fptr = fopen(path, "r");
+
+	//get the first line of this file;
+	char* text = (char*)malloc(500);
+	fgets(text, BUF_SIZE-1, fptr);
+	
+	char* token = malloc(50);
+	char** row_token = (char**) malloc(sizeof(char *) * (strlen(text)));
+	
+
+	token = strtok(text, ",");
+	row_token[0] = token;
+
+	int num_col = 1;
+	while(token = strtok(NULL, ",")){
+		row_token[num_col++] = token;	
+	}
+
+    int length = strlen(row_token[num_col - 1]);
+	int i = 1;
+
+	while(row_token[num_col - 1][length - i] <= 13 && row_token[num_col - 1][length - i] >= 7){
+		row_token[num_col - 1][length - i] = '\0';
+		i++;
+	}
+
+	//find the target column;
+	int target_col = 0;
+	while(target_col < num_col){
+		if(strcmp(row_token[target_col], colname) == 0){
+			break;
+		}
+		target_col++;
+	}
+
+	//no such title, not the target csv file;
+	if(target_col == num_col){
+		return 0;
+	}
+	return 1; 
+	
+}
+
 int isDirectory(char *path) {
     struct stat statbuf;
     if (stat(path, &statbuf) != 0)
