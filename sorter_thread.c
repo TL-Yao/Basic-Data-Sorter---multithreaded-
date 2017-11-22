@@ -303,7 +303,7 @@ void directory(void* arg){
             if(err != 0){
                 printf("Failed to create new thread.\n");
             }
-            pthread_mutex_lock(&lock1);
+            pthread_mutex_unlock(&lock1);
 
         }
         else{ // file
@@ -324,7 +324,7 @@ void directory(void* arg){
                     if(err != 0){
                         printf("Failed to create new thread.\n");
                     }
-                    pthread_mutex_lock(&lock2);
+                    pthread_mutex_unlock(&lock2);
 
 				}   	
             }
