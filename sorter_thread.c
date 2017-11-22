@@ -129,12 +129,12 @@ int tok_file(FILE *fp, row* data, int num_col){
 	return curr_row;
 }
 
-void sort(void * arg){
+void sort(void* arg){
 	/*open the parameter package*/
 		struct sort_para* para;
 		para = (struct sort_para*) arg;
-		char* colname = arg -> colname;
-		char* tmppath = arg -> tmppath;
+		char* colname = para -> colname;
+		char* tmppath = para -> tmppath;
 
 		/*declare variable*/
 		FILE *fp;
@@ -312,11 +312,16 @@ int checkcsv(char* path, char* colname){
 	return 1; 
 	
 }
-void directory(char* path, char* colname){
+void directory(void* arg){
+
+    struct sort_para* para;
+	para = (struct sort_para*) arg;
+	char* colname = para -> colname;
+	char* tmppath = para -> tmppath;
 
     DIR *dir_p;
     struct dirent *dir_ptr;
-    dir_p = opendir(path);
+    dir_p = opendir(tmppath);
     FILE *result;
     int err = 0;
 
@@ -330,7 +335,7 @@ void directory(char* path, char* colname){
     // loop each file and folder in current directory
     while(dir_ptr = readdir(dir_p)){
         char* temppath;
-        temppath = path_contact(path, dir_ptr->d_name);
+        temppath = path_contact(tmppath, dir_ptr->d_name);
         struct stat st;
         stat(temppath, &st);
         
@@ -342,13 +347,16 @@ void directory(char* path, char* colname){
         }
         
         if(isDirectory(temppath)){
+
             pthread_mutex_lock(&lock1);
             tid_index++;
-            err = pthread_create(&tid[tid_index], NULL, &directory, NULL);
+            para -> tmppath = temppath;
+            err = pthread_create(&tid[tid_index], NULL, (void *)&directory, (void*)para);
             if(err != 0){
                 printf("Failed to create new thread.\n");
             }
             pthread_mutex_lock(&lock1);
+            
         }
         else{ // file
             char *name = dir_ptr->d_name;
@@ -360,13 +368,16 @@ void directory(char* path, char* colname){
                name[length - 1] == 'v'){
 
                 if(checkcsv(temppath, colname)){
+
                     pthread_mutex_lock(&lock2);
 					tid_index++;
-                    err = pthread_create(&tid[tid_index], NULL, &sort, NULL);
+                    para -> tmppath = temppath;
+                    err = pthread_create(&tid[tid_index], NULL, &sort, (void*)para);
                     if(err != 0){
                         printf("Failed to create new thread.\n");
                     }
                     pthread_mutex_lock(&lock2);
+
 				}   	
             }
         }
