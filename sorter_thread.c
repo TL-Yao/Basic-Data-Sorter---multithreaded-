@@ -260,58 +260,6 @@ int checkcsv(char* path, char* colname){
 	return 1; 
 	
 }
-
-int isDirectory(char *path) {
-    struct stat statbuf;
-    if (stat(path, &statbuf) != 0)
-        return 0;
-    return S_ISDIR(statbuf.st_mode);
- }
-
-int checkcsv(char* path, char* colname){
-	FILE *fptr;
-	fptr = fopen(path, "r");
-
-	//get the first line of this file;
-	char* text = (char*)malloc(500);
-	fgets(text, BUF_SIZE-1, fptr);
-	
-	char* token = malloc(50);
-	char** row_token = (char**) malloc(sizeof(char *) * (strlen(text)));
-	
-
-	token = strtok(text, ",");
-	row_token[0] = token;
-
-	int num_col = 1;
-	while(token = strtok(NULL, ",")){
-		row_token[num_col++] = token;	
-	}
-
-    int length = strlen(row_token[num_col - 1]);
-	int i = 1;
-
-	while(row_token[num_col - 1][length - i] <= 13 && row_token[num_col - 1][length - i] >= 7){
-		row_token[num_col - 1][length - i] = '\0';
-		i++;
-	}
-
-	//find the target column;
-	int target_col = 0;
-	while(target_col < num_col){
-		if(strcmp(row_token[target_col], colname) == 0){
-			break;
-		}
-		target_col++;
-	}
-
-	//no such title, not the target csv file;
-	if(target_col == num_col){
-		return 0;
-	}
-	return 1; 
-	
-}
 void directory(void* arg){
 
     struct sort_para* para;
@@ -356,7 +304,7 @@ void directory(void* arg){
                 printf("Failed to create new thread.\n");
             }
             pthread_mutex_lock(&lock1);
-            
+
         }
         else{ // file
             char *name = dir_ptr->d_name;
