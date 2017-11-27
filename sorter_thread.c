@@ -296,13 +296,14 @@ void directory(void* arg){
         
         if(isDirectory(temppath)){
 
-            pthread_mutex_lock(&lock1);
             tid_index++;
             para -> tmppath = temppath;
             err = pthread_create(&tid[tid_index], NULL, (void *)&directory, (void*)para);
             if(err != 0){
                 printf("Failed to create new thread.\n");
             }
+            pthread_mutex_lock(&lock1);
+            
             pthread_mutex_unlock(&lock1);
 
         }
