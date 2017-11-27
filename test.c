@@ -30,8 +30,8 @@ void count_process(void* arg){ //new
     int i = 0;
     int err = 0;
     int dirnum = 0;
-    char** dirpath = (char**)malloc(256*sizeof(char*));
-    struct sort_para** paraarr = (struct sort_para**)malloc(256*sizeof(struct sort_para*));
+    char** dirpath = (char**)malloc(500*sizeof(char*));
+    struct sort_para** paraarr = (struct sort_para**)malloc(500*sizeof(struct sort_para*));
 
     struct sort_para* para;
     para = (struct sort_para*) arg;
@@ -50,10 +50,7 @@ void count_process(void* arg){ //new
         exit(1);
     }
 
-     pthread_mutex_lock(&lock);
-        printf("%d the tid is %d,  %s\n", count, pthread_self(), path);        
-        count++;
-    pthread_mutex_unlock(&lock);  
+    
     
     while (dir_ptr = readdir(dir)){
         char* temppath;
@@ -75,6 +72,10 @@ void count_process(void* arg){ //new
             dirnum++;
         }
     }
+    pthread_mutex_lock(&lock);
+        count++;
+        printf("%d the tid is %d,  %s\n", count, pthread_self(), path);                
+    pthread_mutex_unlock(&lock);  
     for(i = 0; i < dirnum; i++){
         err = pthread_create(&temparr[i], NULL, (void *)&count_process, (void*)paraarr[i]);
         if(err != 0){
