@@ -17,10 +17,13 @@
 #include <errno.h>
 #include <string.h>
 #include<pthread.h>
+#define TRUE 1
+#define FALSE 0
 
 struct sort_para{
     char* colname;
     char* tmppath;
+    char* output_dir;
 };
 
 typedef struct{
