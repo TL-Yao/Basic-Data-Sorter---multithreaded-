@@ -1,6 +1,6 @@
 #include "sorter_thread.h"
-#define SIZE 255
-pthread_t tid[SIZE+1];
+#define SIZE 500
+pthread_t* tid[SIZE];
 int count = 0;
 pthread_mutex_t lock;
 pthread_t temp = 0;
@@ -27,13 +27,14 @@ int isDirectory(char *path) {
  }
 
 void count_process(void* arg){ //new
-
+    int i = 0;
     int err = 0;
-    int tid_index = 0;
     struct sort_para* para;
     para = (struct sort_para*) arg;
 	char* colname = para -> colname; 
     char* path = para -> tmppath;
+    pthread_t* tid = para -> tid;
+    pthread_t* temparr = (pthread_t*)calloc(100,sizeof(pthread_t));
     DIR *dir;  
     dir = opendir(path); 
     
@@ -44,11 +45,15 @@ void count_process(void* arg){ //new
 		//fflush(stdout); 
         exit(1);
     }
+
+     pthread_mutex_lock(&lock);
+        printf("%d the tid is %d,  %s\n", count, pthread_self(), path);        
+        count++;
+    pthread_mutex_unlock(&lock);  
+    
     while (dir_ptr = readdir(dir)){
         char* temppath;
         temppath = path_contact(path, dir_ptr->d_name);
-        struct stat st;
-        stat(temppath, &st);
          
         /*skip forward and back folder*/
         if(strcmp(dir_ptr->d_name, ".") == 0 ||
@@ -59,22 +64,21 @@ void count_process(void* arg){ //new
 
         if(isDirectory(temppath)){
             para -> tmppath = temppath;
-            err = pthread_create(&temp, NULL, (void *)&count_process, (void*)para);
+            printf("%s\n", temppath);
+            para -> tid = tid;
+            err = pthread_create(&temparr[i], NULL, (void *)&count_process, (void*)para);
             if(err != 0){
                 printf("Failed to create new thread.\n");
-            }
-            pthread_mutex_lock(&lock);
-
-            tid[count] = temp;
-            count++;
-            printf("%d the tid is %d\n", count, temp);
-            printf("count: %d path: %s\n", count, temppath);
-            
-            pthread_mutex_unlock(&lock);
-            
+            }       
         }
+        i++;
     }
-    pthread_join(temp, NULL);
+    while(temparr[i] != 0){
+        pthread_join(temparr[i], NULL);        
+        printf("%dth tid: %d,current: %d\n", i, temparr[i], pthread_self());
+        i++;
+    }  
+
 }
 
 int main(int argc, char** argv){
@@ -84,19 +88,20 @@ int main(int argc, char** argv){
     struct sort_para* para = (struct sort_para*) malloc (sizeof(struct sort_para*));
     char* colname = argv[1];
     char* dirname = argv[2];
-    
+    pthread_t* tid = (pthread_t*) calloc(sizeof(pthread_t), SIZE);
+
     para -> colname = colname;
     para -> tmppath = dirname;
+    para -> tid = tid;
 
-    //printf("%s\n", dirname);
-    count_process((void*)para);
-
-    int i = 0;
-    while(tid[i]){
-        pthread_join(tid[i], NULL);
-        i++;
+    pthread_t tmptid;
+    int error = 0;
+    error = pthread_create(&tmptid, NULL, (void*)&count_process, (void*)para);
+    if(error != 0){
+        printf("Failed to create thread.\n");
+        pthread_exit(0);
     }
-
+    pthread_join(tmptid, NULL);
     pthread_mutex_destroy(&lock);
     return 0;
 }
