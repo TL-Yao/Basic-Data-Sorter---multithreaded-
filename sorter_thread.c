@@ -262,7 +262,7 @@ int checkcsv(char* path, char* colname){
 }
 
 void directory(void* arg){
-	int i = 0
+	int i = 0;
 	int err = 0;
 	int dirnum = 0;
 	int csv_num = 0;
@@ -272,9 +272,9 @@ void directory(void* arg){
 	char* colname = para -> colname;
 	char* tmppath = para -> tmppath;
     char** dirpath = (char**)malloc(MAX_DIR*sizeof(char*));
-	char** csv_path = (char**)malloc(MAX_DIR*sizeof(char*))
+	char** csv_path = (char**)malloc(MAX_DIR*sizeof(char*));
 	struct sort_para** paraarr = (struct sort_para**)malloc(256*sizeof(struct sort_para*));
-    struct sort_para** csv_arr = (stuct sort_para**)malloc(256*sizeof(struct sort_para*));
+    struct sort_para** csv_arr = (struct sort_para**)malloc(256*sizeof(struct sort_para*));
 	pthread_t* temparr = (pthread_t*)calloc(256,sizeof(pthread_t));
 
 	DIR *dir_p;
@@ -312,7 +312,6 @@ void directory(void* arg){
         else{ // file
             char *name = dir_ptr->d_name;
             int length = strlen(name);
-            
             /* .csv file*/
             if(name[length - 3] == 'c' &&
                name[length - 2] == 's' &&
@@ -320,7 +319,7 @@ void directory(void* arg){
 			   checkcsv(temppath, colname)){
 
                    csv_path[csv_num] = malloc(strlen(temppath)+1);
-				   csv_path[csv_num] = strcpy(dirpath[dirnum], temppath);
+				   csv_path[csv_num] = strcpy(csv_path[csv_num], temppath);
 				   csv_arr[csv_num] = (struct sort_para*)malloc(strlen(colname) + strlen(temppath) + 1);
 				   csv_arr[csv_num] -> colname = colname;
 				   csv_arr[csv_num] -> tmppath = temppath;
@@ -331,29 +330,29 @@ void directory(void* arg){
     }
 	pthread_mutex_lock(&lock);
 		count++;
-        printf("%d the tid is %d,  %s\n", count, pthread_self(), path);                
+        printf("%d the tid is %d,  %s\n", count, pthread_self(), tmppath);                
     pthread_mutex_unlock(&lock);
 
 	/*create thread for directory*/
-	for(; i < dirnum; i++){
-		err = pthread_create(&temparr[i], NULL, (void *)&sort, (void*)paraarr[i]);
+	for(i = 0; i < dirnum; i++){
+		err = pthread_create(&temparr[i], NULL, (void *)&directory, (void*)paraarr[i]);
         if(err != 0){
             printf("Failed to create new thread.\n");
         }    
 	}
 
 	/*create thread for csv file*/
-	int j = 0;
-	for(; j < csv_num; ++j, ++i){
-		err = pthread_create(&temparr[i], NULL, (void *)&count_process, (void*)csv_arr[j]);
+	int j;
+	for(j = i ; j < dirnum + csv_num; ++j){
+		err = pthread_create(&temparr[j], NULL, (void *)&sort, (void*)csv_arr[j]);
         if(err != 0){
             printf("Failed to create new thread.\n");
         }    
 	}
 
 	/*join to wait all thread finish*/
-	for (i = 0; i < dirnum; i++){
-		pthread_join(temparr[i], NULL)
+	for (i = 0; i < dirnum + csv_num; i++){
+		pthread_join(temparr[i], NULL);
 	}
 }
 
@@ -394,16 +393,17 @@ int main (int argc, char* argv[]){
 		i += 2;
 	}
 
-	if(d = FALSE){
+	if(d == FALSE){
 		dirname = getcwd(currDir, MAX_DIR);
 	}
 
-	if(o = FALSE){
+	if(o == FALSE){
 		odirname = NULL;
 	}
 
-	if(!colname){
+	if(c == FALSE){
 		printf("Wrong input, column name missed.\n");
+		exit(1);
 	}
 
 	para -> colname = colname;
@@ -412,11 +412,12 @@ int main (int argc, char* argv[]){
 
     if(pthread_mutex_init(&lock, NULL) != 0){
         printf("Error on lock1.\n");
+		exit(1);
     }
     
 	pthread_t tmptid;
     int error = 0;
-    error = pthread_create(&tmptid, NULL, (void*)&count_process, (void*)para);
+    error = pthread_create(&tmptid, NULL, (void*)&directory, (void*)para);
     if(error != 0){
         printf("Failed to create thread.\n");
         pthread_exit(0);
