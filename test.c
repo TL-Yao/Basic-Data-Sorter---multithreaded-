@@ -29,11 +29,15 @@ int isDirectory(char *path) {
 void count_process(void* arg){ //new
     int i = 0;
     int err = 0;
+    int dirnum = 0;
+    char** dirpath = (char**)malloc(256*sizeof(char*));
+    struct sort_para** paraarr = (struct sort_para**)malloc(256*sizeof(struct sort_para*));
+
     struct sort_para* para;
     para = (struct sort_para*) arg;
 	char* colname = para -> colname; 
     char* path = para -> tmppath;
-    pthread_t* tid = para -> tid;
+    //pthread_t* tid = para -> tid;
     pthread_t* temparr = (pthread_t*)calloc(100,sizeof(pthread_t));
     DIR *dir;  
     dir = opendir(path); 
@@ -61,23 +65,27 @@ void count_process(void* arg){ //new
 		   dir_ptr->d_name[0] == '.'){
             continue;
         }
-
+        
         if(isDirectory(temppath)){
-            para -> tmppath = temppath;
-            printf("%s\n", temppath);
-            para -> tid = tid;
-            err = pthread_create(&temparr[i], NULL, (void *)&count_process, (void*)para);
-            if(err != 0){
-                printf("Failed to create new thread.\n");
-            }       
+            dirpath[dirnum] = malloc(strlen(temppath)+1);
+            dirpath[dirnum] = strcpy(dirpath[dirnum], temppath);
+            paraarr[dirnum] = (struct sort_para*)malloc(strlen(colname) + strlen(temppath) + 1);
+            paraarr[dirnum] -> colname = colname;
+            paraarr[dirnum] -> tmppath = temppath;
+            dirnum++;
         }
-        i++;
     }
-    while(temparr[i] != 0){
-        pthread_join(temparr[i], NULL);        
-        printf("%dth tid: %d,current: %d\n", i, temparr[i], pthread_self());
-        i++;
-    }  
+    for(i = 0; i < dirnum; i++){
+        err = pthread_create(&temparr[i], NULL, (void *)&count_process, (void*)paraarr[i]);
+        if(err != 0){
+            printf("Failed to create new thread.\n");
+        }    
+    }
+
+
+    for(i = 0; i < dirnum; i++){
+        pthread_join(temparr[i], NULL);
+    }
 
 }
 
@@ -92,7 +100,7 @@ int main(int argc, char** argv){
 
     para -> colname = colname;
     para -> tmppath = dirname;
-    para -> tid = tid;
+   // para -> tid = tid;
 
     pthread_t tmptid;
     int error = 0;

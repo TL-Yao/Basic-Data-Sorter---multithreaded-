@@ -21,7 +21,6 @@
 struct sort_para{
     char* colname;
     char* tmppath;
-    pthread_t * tid;
 };
 
 typedef struct{
