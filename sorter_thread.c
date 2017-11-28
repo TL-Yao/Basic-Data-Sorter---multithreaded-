@@ -64,6 +64,11 @@ char** tokenizer(char* line, size_t num_col){
 		else if(line[i] == '"' && start_quote == TRUE){
 			//store value in result
 			result[k] = (char*) malloc((j + 1) * sizeof(char));
+            if(!result[k]){
+                printf("wrong malloc at result[k]!\n");
+                exit(1);
+            }
+            
 			temp = trim(temp, j - 1);
 			strcpy(result[k], temp);
 			memset(&temp[0], 0, strlen(temp));
@@ -85,6 +90,12 @@ char** tokenizer(char* line, size_t num_col){
 			}
             //store value to result;
 			result[k] = (char*)malloc((j+1) * sizeof(char));
+            
+            if(!result[k]){
+                printf("wrong malloc at result[k]!\n");
+                exit(1);
+            }
+            
 			temp = trim(temp, j - 1);			
 			strcpy(result[k], temp);
 			memset(&temp[0], 0, strlen(temp));			
@@ -94,6 +105,10 @@ char** tokenizer(char* line, size_t num_col){
 			if(line[i] == ',' && i == strlen(line) - 1){
 				temp[0] = '\0';
 				result[k] = (char*)malloc((j+1) * sizeof(char));
+                if(!result[k]){
+                    printf("wrong malloc at result[k]!\n");
+                    exit(1);
+                }
 				strcpy(result[k], temp);
 				memset(&temp[0], 0, strlen(temp));								
 			}
@@ -234,11 +249,11 @@ void sort(void* arg){
 			}
 			else{
 				/*deal with the rest file*/
-				char* database_ptr;
+				row* database_ptr;
 				database_ptr = (row*) realloc (database, sizeof(row) * (size_database + num_row + 1));
-				if(!database_ptr){
-					printf("realloc wrong!!!!");
-					exit(1);
+				if(database_ptr){
+					printf("realloc!!!!");
+					
 				}
 				size_database = size_database + num_row + 1;
 
@@ -347,6 +362,11 @@ void directory(void* arg){
         if(isDirectory(temppath)){
         
 		    dirpath[dirnum] = malloc(strlen(temppath)+1);
+            if(!dirpath[dirnum]){
+                printf("wrong malloc at dirpath[dirnum]1!\n");
+                exit(1);
+            }
+            
             dirpath[dirnum] = strcpy(dirpath[dirnum], temppath);
             paraarr[dirnum] = (struct sort_para*)malloc(strlen(colname) + strlen(temppath) + 1);
             paraarr[dirnum] -> colname = colname;
@@ -364,6 +384,10 @@ void directory(void* arg){
 			   checkcsv(temppath, colname)){
 
                    csv_path[csv_num] = malloc(strlen(temppath)+1);
+                    if(!csv_path[csv_num]){
+                        printf("wrong malloc at csv_path[csv_num]!\n");
+                        exit(1);
+                    }       
 				   csv_path[csv_num] = strcpy(csv_path[csv_num], temppath);
 				   csv_arr[csv_num] = (struct sort_para*)malloc(strlen(colname) + strlen(temppath) + 1);
 				   csv_arr[csv_num] -> colname = colname;
@@ -422,15 +446,16 @@ int main (int argc, char* argv[]){
 	printf("Initial PID: %d\nTIDS of all child threads: ", self);
 	fflush(stdout);
 	//declare variables;
-    char* colname = (char*)malloc(100);
-	char* dirname = (char*)malloc(100);
-	char* odirname = (char*)malloc(100);
+
     char currDir[MAX_DIR];
     int c = FALSE;
 	int d = FALSE;
 	int o = FALSE;
 	struct sort_para* para = (struct sort_para*) malloc (sizeof(struct sort_para*));
-
+    para -> colname = (char*)malloc(MAX_DIR);
+    para -> tmppath = (char*)malloc(MAX_DIR);
+    para -> output_dir  = (char*)malloc(MAX_DIR);
+    
 	if(argc < 2){
 		printf("Too few input.\n");
 		exit(0);
@@ -442,36 +467,32 @@ int main (int argc, char* argv[]){
 			exit(0);
 		}
 		if(!strcmp(argv[i], "-c")){
-			colname = strcpy(colname, argv[i+1]);
+			strcpy(para -> colname, argv[i+1]);
 			c = TRUE;
 		}
 		if(!strcmp(argv[i], "-d")){
-			dirname = strcpy(dirname, argv[i+1]);
+			strcpy(para -> tmppath, argv[i+1]);
 			d = TRUE;
 		}
 		if(!strcmp(argv[i], "-o")){
-			odirname = strcpy(odirname, argv[i+1]);
+            strcpy(para -> output_dir, argv[i+1]);
 			o = TRUE;
 		}
 		i += 2;
 	}
 
 	if(d == FALSE){
-		dirname = getcwd(currDir, MAX_DIR);
+		getcwd(para -> tmppath, MAX_DIR);
 	}
 
 	if(o == FALSE){
-		odirname = NULL;
+		para -> output_dir  = NULL;
 	}
 
 	if(c == FALSE){
 		printf("Wrong input, column name missed.\n");
 		exit(1);
 	}
-
-	para -> colname = colname;
-    para -> tmppath = dirname;
-	para -> output_dir = odirname;
 
     if(pthread_mutex_init(&lock, NULL) != 0){
         printf("Error on lock.\n");
@@ -491,17 +512,17 @@ int main (int argc, char* argv[]){
         printf("Failed to create thread.\n");
         pthread_exit(0);
     }
-	
 	void* end;
+    
     pthread_join(tmptid, &end);
-
 	int target_col = 0;
 	while(target_col < firstRow.num_col){
-				if(strcmp(firstRow.row_token[target_col], colname) == 0){
-					break;
-				}
-				target_col++;
-			}
+		if(strcmp(firstRow.row_token[target_col], para -> colname) == 0){
+			break;
+		}
+		target_col++;
+	}
+
 	mergeSort(database, target_col, database_row_count);
 	/*FILE* fp;
 	fp = fopen();
