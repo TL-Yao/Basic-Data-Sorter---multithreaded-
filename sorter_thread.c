@@ -236,7 +236,7 @@ void sort(void* arg){
 
 			i = 0;
 			while(i < num_row){
-				database[i+1] = data[i];
+				database[database_row_count] = data[i];
 				database_row_count++;
 				i++;
 			}
