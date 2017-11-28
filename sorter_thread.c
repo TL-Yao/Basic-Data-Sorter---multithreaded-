@@ -3,12 +3,13 @@
 int count = 0;
 int database_row_count = 0;
 int size_database = 0;
-pthread_t tid[255];
+pthread_t tid[256];
 int tid_index = -1;
 pthread_mutex_t lock;
 pthread_mutex_t lock1;
 row* database;
 int isFir = FALSE;
+row firstRow;
 
 char* path_contact(const char* str1,const char* str2){ 
     char* result;  
@@ -214,19 +215,19 @@ void sort(void* arg){
 			pthread_mutex_lock(&lock1);
 			if(!isFir){
 				isFir = TRUE;
-				database = (row*) malloc ( sizeof(row) * (num_row + 2));
-				size_database = num_row + 2;
+				database = (row*) malloc ( sizeof(row) * (num_row + 1));
+				size_database = num_row + 1;
 
 				/*type-in the first row*/
 				//printf("debug, first1: %s\n", first_row.row_token[1]);
-				database[0] = first_row;
+				firstRow = first_row;
 				//printf("debug, first2: %s\n", database[0].row_token[1]);
-				database_row_count++;
+				//database_row_count++;
 
 				/*type-in the rest row in current file*/
 				i = 0;
 				while(i < num_row){
-					database[i+1] = data[i];
+					database[i] = data[i];
 					database_row_count++;
 					i++;
 				}
@@ -366,40 +367,54 @@ void directory(void* arg){
         }
         
     }
-	pthread_mutex_lock(&lock);
+	/*pthread_mutex_lock(&lock);
 		count++;
        // printf("%d the tid is %d,  %s\n", count, pthread_self(), tmppath);                
-    pthread_mutex_unlock(&lock);
+    pthread_mutex_unlock(&lock);*/
 
 	/*create thread for directory*/
 	for(i = 0; i < dirnum; i++){
 		err = pthread_create(&dirarr[i], NULL, (void *)&directory, (void*)paraarr[i]);
+		printf("%d, ", dirarr[i]);
         if(err != 0){
             printf("Failed to create new thread.\n");
         }    
 	}
-
+	
 	/*create thread for csv file*/
 	int j;
 	for(j = 0 ; j < csv_num; j++){
 		err = pthread_create(&csvarr[j], NULL, (void *)&sort, (void*)csv_arr[j]);
-        if(err != 0){
+		printf("%d, ", csvarr[j]);        
+		if(err != 0){
             printf("Failed to create new thread.\n");
         }    
 	}
-
+	
 	/*join to wait all thread finish*/
 	for (i = 0; i < dirnum; i++){
 		pthread_join(dirarr[i], NULL);
 	}
+	for (i = 0; i < dirnum; i++){
+		free(paraarr[i]);
+	}
 	for (j = 0; j < csv_num; j++){
 		pthread_join(csvarr[j], NULL);
 	}
-	
+	for (j = 0; j < csv_num; j++){
+		free(csv_arr[j]);
+	}
+	pthread_mutex_lock(&lock);
+		count += dirnum;
+		count += csv_num;
+       	//printf("count: %d dir: %d, csv: %d\n", count, dirnum, csv_num);                
+    pthread_mutex_unlock(&lock);
 }
 
 int main (int argc, char* argv[]){
-
+	pthread_t self = pthread_self();
+	printf("Initial PID: %d\nTIDS of all child threads: ", self);
+	fflush(stdout);
 	//declare variables;
     char* colname = (char*)malloc(100);
 	char* dirname = (char*)malloc(100);
@@ -464,24 +479,40 @@ int main (int argc, char* argv[]){
     
 	pthread_t tmptid;
     int error = 0;
-    error = pthread_create(&tmptid, NULL, (void*)&directory, (void*)para);
+    error = pthread_create(&tmptid, NULL, (void*)directory, (void*)para);
 	
     if(error != 0){
         printf("Failed to create thread.\n");
         pthread_exit(0);
     }
+	
+	void* end;
+    pthread_join(tmptid, &end);
 
-    pthread_join(tmptid, NULL);
+	int target_col = 0;
+	while(target_col < firstRow.num_col){
+				if(strcmp(firstRow.row_token[target_col], colname) == 0){
+					break;
+				}
+				target_col++;
+			}
+	mergeSort(database, target_col, database_row_count);
+	/*FILE* fp;
+	fp = fopen();
 	i = 0;
 	int j = 0;
-	while(i < 4){
-		while(j < 27){
-			printf("%s,", database[i].row_token[j]);
+	while(i < database_row_count){
+		j = 0;
+		while(j < firstRow.num_col){
+			
 			j++;
 		}
 		i++;
-		printf("\n");	
-	}
+		
+	}*/
+	printf("\nTotal number of threads: %d\n", count + 1);
     pthread_mutex_destroy(&lock);
+    pthread_mutex_destroy(&lock1);
+	
     return 0;
 }
