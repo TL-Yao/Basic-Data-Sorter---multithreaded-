@@ -242,6 +242,7 @@ void sort(void* arg){
 				}
 				size_database = size_database + num_row + 1;
 
+				database = database_ptr;
 				i = 0;
 				while(i < num_row){
 					database[database_row_count] = data[i];
