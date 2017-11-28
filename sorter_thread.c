@@ -231,16 +231,17 @@ void sort(void* arg){
 					i++;
 				}
 			}
+			else{
+				/*deal with the rest file*/
+				database = (row*) realloc (database, sizeof(row) * (size_database + num_row + 1));
+				size_database = size_database + num_row + 1;
 
-			/*deal with the rest file*/
-			database = (row*) realloc (database, sizeof(row) * (size_database + num_row + 1));
-			size_database = size_database + num_row + 1;
-
-			i = 0;
-			while(i < num_row){
-				database[database_row_count] = data[i];
-				database_row_count++;
-				i++;
+				i = 0;
+				while(i < num_row){
+					database[database_row_count] = data[i];
+					database_row_count++;
+					i++;
+				}
 			}
 			pthread_mutex_unlock(&lock1);
 }
@@ -408,7 +409,6 @@ int main (int argc, char* argv[]){
 	int d = FALSE;
 	int o = FALSE;
 	struct sort_para* para = (struct sort_para*) malloc (sizeof(struct sort_para*));
-	database =(row**) malloc(MAX_FILE_DIR * sizeof (row*));
 
 	if(argc < 2){
 		printf("Too few input.\n");
