@@ -218,7 +218,9 @@ void sort(void* arg){
 				size_database = num_row + 2;
 
 				/*type-in the first row*/
+				//printf("debug, first1: %s\n", first_row.row_token[1]);
 				database[0] = first_row;
+				//printf("debug, first2: %s\n", database[0].row_token[1]);
 				database_row_count++;
 
 				/*type-in the rest row in current file*/
@@ -365,7 +367,7 @@ void directory(void* arg){
     }
 	pthread_mutex_lock(&lock);
 		count++;
-        printf("%d the tid is %d,  %s\n", count, pthread_self(), tmppath);                
+       // printf("%d the tid is %d,  %s\n", count, pthread_self(), tmppath);                
     pthread_mutex_unlock(&lock);
 
 	/*create thread for directory*/
@@ -470,6 +472,16 @@ int main (int argc, char* argv[]){
     }
 
     pthread_join(tmptid, NULL);
+	i = 0;
+	int j = 0;
+	while(i < 4){
+		while(j < 27){
+			printf("%s,", database[i].row_token[j]);
+			j++;
+		}
+		i++;
+		printf("\n");	
+	}
     pthread_mutex_destroy(&lock);
     return 0;
 }

@@ -1,4 +1,4 @@
-#include "Sorter_thread.h"
+#include "sorter_thread.h"
 
 
 //if it is a number string, return 1, choosing int mergesort
