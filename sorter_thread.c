@@ -1,5 +1,4 @@
 #include "sorter_thread.h"
-#define MAX_DIR 4096
 
 int count = 0;
 pthread_t tid[255];
@@ -275,7 +274,8 @@ void directory(void* arg){
 	char** csv_path = (char**)malloc(MAX_DIR*sizeof(char*));
 	struct sort_para** paraarr = (struct sort_para**)malloc(256*sizeof(struct sort_para*));
     struct sort_para** csv_arr = (struct sort_para**)malloc(256*sizeof(struct sort_para*));
-	pthread_t* temparr = (pthread_t*)calloc(256,sizeof(pthread_t));
+	pthread_t* dirarr = (pthread_t*)calloc(256,sizeof(pthread_t));
+	pthread_t* csvarr = (pthread_t*)calloc(256,sizeof(pthread_t));
 
 	DIR *dir_p;
 	dir_p = opendir(tmppath);
@@ -335,7 +335,7 @@ void directory(void* arg){
 
 	/*create thread for directory*/
 	for(i = 0; i < dirnum; i++){
-		err = pthread_create(&temparr[i], NULL, (void *)&directory, (void*)paraarr[i]);
+		err = pthread_create(&dirarr[i], NULL, (void *)&directory, (void*)paraarr[i]);
         if(err != 0){
             printf("Failed to create new thread.\n");
         }    
@@ -343,17 +343,21 @@ void directory(void* arg){
 
 	/*create thread for csv file*/
 	int j;
-	for(j = i ; j < dirnum + csv_num; ++j){
-		err = pthread_create(&temparr[j], NULL, (void *)&sort, (void*)csv_arr[j]);
+	for(j = 0 ; j < csv_num; j++){
+		err = pthread_create(&csvarr[j], NULL, (void *)&sort, (void*)csv_arr[j]);
         if(err != 0){
             printf("Failed to create new thread.\n");
         }    
 	}
 
 	/*join to wait all thread finish*/
-	for (i = 0; i < dirnum + csv_num; i++){
-		pthread_join(temparr[i], NULL);
+	for (i = 0; i < dirnum; i++){
+		pthread_join(dirarr[i], NULL);
 	}
+	for (j = 0; j < csv_num; j++){
+		pthread_join(csvarr[j], NULL);
+	}
+	
 }
 
 int main (int argc, char* argv[]){
@@ -418,10 +422,12 @@ int main (int argc, char* argv[]){
 	pthread_t tmptid;
     int error = 0;
     error = pthread_create(&tmptid, NULL, (void*)&directory, (void*)para);
+	
     if(error != 0){
         printf("Failed to create thread.\n");
         pthread_exit(0);
     }
+
     pthread_join(tmptid, NULL);
     pthread_mutex_destroy(&lock);
     return 0;
