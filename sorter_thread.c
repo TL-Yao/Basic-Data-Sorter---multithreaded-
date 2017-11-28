@@ -1,9 +1,14 @@
 #include "sorter_thread.h"
-
+#define MAX_FILE_DIR 256
 int count = 0;
+int database_row_count = 0;
+int size_database = 0;
 pthread_t tid[255];
 int tid_index = -1;
 pthread_mutex_t lock;
+pthread_mutex_t lock1;
+row* database;
+int isFir = FALSE;
 
 char* path_contact(const char* str1,const char* str2){ 
     char* result;  
@@ -206,6 +211,36 @@ void sort(void* arg){
 			}
 			mergeSort(data, target_col, num_row);
 
+			pthread_mutex_lock(&lock1);
+			if(!isFir){
+				isFir = TRUE;
+				database = (row*) malloc ( sizeof(row) * (num_row + 2));
+				size_database = num_row + 2;
+
+				/*type-in the first row*/
+				database[0] = first_row;
+				database_row_count++;
+
+				/*type-in the rest row in current file*/
+				i = 0;
+				while(i < num_row){
+					database[i+1] = data[i];
+					database_row_count++;
+					i++;
+				}
+			}
+
+			/*deal with the rest file*/
+			database = (row*) realloc (database, sizeof(row) * (size_database + num_row + 1));
+			size_database = size_database + num_row + 1;
+
+			i = 0;
+			while(i < num_row){
+				database[i+1] = data[i];
+				database_row_count++;
+				i++;
+			}
+			pthread_mutex_unlock(&lock1);
 }
 
 int isDirectory(char *path) {
@@ -371,6 +406,7 @@ int main (int argc, char* argv[]){
 	int d = FALSE;
 	int o = FALSE;
 	struct sort_para* para = (struct sort_para*) malloc (sizeof(struct sort_para*));
+	database =(row**) malloc(MAX_FILE_DIR * sizeof (row*));
 
 	if(argc < 2){
 		printf("Too few input.\n");
@@ -415,6 +451,11 @@ int main (int argc, char* argv[]){
 	para -> output_dir = odirname;
 
     if(pthread_mutex_init(&lock, NULL) != 0){
+        printf("Error on lock.\n");
+		exit(1);
+    }
+
+	if(pthread_mutex_init(&lock1, NULL) != 0){
         printf("Error on lock1.\n");
 		exit(1);
     }
