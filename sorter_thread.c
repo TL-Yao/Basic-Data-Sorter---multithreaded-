@@ -234,7 +234,12 @@ void sort(void* arg){
 			}
 			else{
 				/*deal with the rest file*/
-				database = (row*) realloc (database, sizeof(row) * (size_database + num_row + 1));
+				char* database_ptr;
+				database_ptr = (row*) realloc (database, sizeof(row) * (size_database + num_row + 1));
+				if(!database_ptr){
+					printf("realloc wrong!!!!");
+					exit(1);
+				}
 				size_database = size_database + num_row + 1;
 
 				i = 0;
