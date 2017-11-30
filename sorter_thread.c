@@ -528,70 +528,77 @@ int main (int argc, char* argv[]){
 	void* end;
     pthread_join(tmptid, &end);
 
-	int target_col = 0;
-	while(target_col < 28){
-		if(strcmp(firstRow.row_token[target_col], colname) == 0){
-			break;
-		}				
-		target_col++;
-	}
-	//printf("target: %d\n", target_col);
-	//printf("row count: %d\n", database_row_count);
-	mergeSort(database, target_col, database_row_count);
-	FILE* fp;
-	char* fixname = "AllFiles-sorted-";
-	char* csv = ".csv";
-	char* filename = (char*)malloc(21 + strlen(colname));
-	char* output_path;
-	strncpy(filename, fixname, strlen(fixname));
-	strcat(filename, colname);
-	strcat(filename, csv);
-	output_path = path_contact(odirname, filename);
-	//printf("output path: %s\n", output_path);
-	fp = fopen(output_path, "w");
-	i = 0;
-		//print the first row:
-		while(i < 28){
-			fprintf(fp, "%s",firstRow.row_token[i]);
-			if(i != 27){
-				fprintf(fp, ",");
-			}else{
-				fprintf(fp, "\n");
-			}
-			i++;
+	if(isFir){
+		int target_col = 0;
+		while(target_col < 28){
+			if(strcmp(firstRow.row_token[target_col], colname) == 0){
+				break;
+			}				
+			target_col++;
 		}
-	i = 0;
-	int j = 0;
-	int k = 0;
-		next:
-		while(i < database_row_count){
-			while(j < 28){
-				//if(data[i].comma){
-				for(k = 0; k < strlen(database[i].row_token[j]); k++){
-					if(database[i].row_token[j][k] == ',' && j != 27){
-						fprintf(fp, "\"%s\",", database[i].row_token[j]);
-						j++;
-						break;
-					}
-					if(database[i].row_token[j][k] == ',' && j == 27){ 
-						fprintf(fp, "\"%s\"", database[i].row_token[j]);
-						i++;
-						j = 0;
-						goto next;
-					}
-				}
-	
-				fprintf(fp, "%s",database[i].row_token[j]);
-				if(j != 27){
+
+		if(target_col == 28){
+			printf("wrong col input!");
+			exit(1);
+		}
+		
+		mergeSort(database, target_col, database_row_count);
+		FILE* fp;
+		char* fixname = "AllFiles-sorted-";
+		char* csv = ".csv";
+		char* filename = (char*)malloc(21 + strlen(colname));
+		char* output_path;
+		strncpy(filename, fixname, strlen(fixname));
+		strcat(filename, colname);
+		strcat(filename, csv);
+		output_path = path_contact(odirname, filename);
+		//printf("output path: %s\n", output_path);
+		fp = fopen(output_path, "w");
+		i = 0;
+			//print the first row:
+			while(i < 28){
+				fprintf(fp, "%s",firstRow.row_token[i]);
+				if(i != 27){
 					fprintf(fp, ",");
-				}else{ 
+				}else{
 					fprintf(fp, "\n");
 				}
-				j++;
+				i++;
 			}
-			i++;
-			j = 0;
-		}
+		i = 0;
+		int j = 0;
+		int k = 0;
+			next:
+			while(i < database_row_count){
+				while(j < 28){
+					//if(data[i].comma){
+					for(k = 0; k < strlen(database[i].row_token[j]); k++){
+						if(database[i].row_token[j][k] == ',' && j != 27){
+							fprintf(fp, "\"%s\",", database[i].row_token[j]);
+							j++;
+							break;
+						}
+						if(database[i].row_token[j][k] == ',' && j == 27){ 
+							fprintf(fp, "\"%s\"", database[i].row_token[j]);
+							i++;
+							j = 0;
+							goto next;
+						}
+					}
+		
+					fprintf(fp, "%s",database[i].row_token[j]);
+					if(j != 27){
+						fprintf(fp, ",");
+					}else{ 
+						fprintf(fp, "\n");
+					}
+					j++;
+				}
+				i++;
+				j = 0;
+			}	
+	}
+	
 
 	printf("\nTotal number of threads: %d\n", count + 1);
     pthread_mutex_destroy(&lock);
